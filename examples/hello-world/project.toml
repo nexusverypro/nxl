@@ -1,0 +1,22 @@
+[project]
+file_name = "nxl-hello-world"
+name = "Nxl Hello World Demo"
+description = "Hello world demo"
+version = "1.0.0"
+author = "nex"
+license = "none"
+
+[configuration."release"]
+output = "bin/release"
+optimization = 0
+unsafe = false
+
+[configuration."debug"]
+output = "bin/debug"
+optimization = 0
+unsafe = false
+symbol_map = { output = ".sym", include_mangled = true }
+
+[structure]
+exclude = []
+include = []

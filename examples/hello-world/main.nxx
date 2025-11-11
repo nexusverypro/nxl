@@ -1,0 +1,7 @@
+package "nxl:std";
+use pkg "nxl:demo";
+
+[@entry_point]
+static fn main(argc: s32, argv: []string): s32 {
+	return 0;
+}
