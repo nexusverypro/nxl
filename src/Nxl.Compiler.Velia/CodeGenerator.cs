@@ -5,6 +5,7 @@ using Re.Asm;
 
 namespace Nxl.Compiler.Velia;
 
+// TODO: it would be nice to be able to optimize assembly instructions soon
 public sealed class CodeGenerator
 {
     private const string IDENT_FORMAT_STR = "Re.Asm (via .NET, runtime {0}) on {1} ({2})";
@@ -58,23 +59,15 @@ public sealed class CodeGenerator
             var startLabel = _assemblyGenerator.Label("_start");
             _assemblyGenerator.Global(startLabel);
             {
-                _assemblyGenerator.Sub(Register.RSP, Immediate.Byte(8));    // enable stack frame
-                _assemblyGenerator.Call("main");                            // call main()
-                _assemblyGenerator.Add(Register.RSP, Immediate.Byte(8));    // disable stack frame
-
-                if (_isWindows)
-                {
-                    // ExitProcess(RCX)
-                    _assemblyGenerator.Mov(Register.RCX, Register.RAX);
-                    _assemblyGenerator.Jmp("ExitProcess");
-                }
-                else
-                {
-                    // sys_exit(RDI)
-                    _assemblyGenerator.Mov(Register.RDI, Register.RAX);
-                    _assemblyGenerator.Mov(Register.RAX, Immediate.Dword(60));
-                    _assemblyGenerator.Syscall();
-                }
+                _assemblyGenerator.Xor(Register.EBP, Register.EBP); // mark the end of stack frames
+                _assemblyGenerator.Mov(Register.EDI, Memory.Base(Register.RSP)); // get argc from the stack
+                _assemblyGenerator.Lea(Memory.Base(Register.RSP, 8), Register.RSI); // take the address of argv from the stack
+                _assemblyGenerator.Lea(Memory.New(Register.RSP, Register.RDI, 8, 16), Register.RDX); // take the address of envp from the stack
+                _assemblyGenerator.Xor(Register.EAX, Register.EAX); // per ABI and compatibility with icc
+                _assemblyGenerator.Call("main"); // main(%edi, %rsi, %rdx)
+                _assemblyGenerator.Mov(Register.EDI, Register.EAX); // transfer the return of main to first arg of _nxl_crt_exit0
+                _assemblyGenerator.Xor(Register.EAX, Register.EAX); // per ABI and compatibility with icc
+                _assemblyGenerator.Call("_nxl_crt_exit0"); // _nxl_crt_exit0(%edi)
             }
         }
 

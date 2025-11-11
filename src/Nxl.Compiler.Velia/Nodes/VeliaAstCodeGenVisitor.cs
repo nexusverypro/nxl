@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Antlr4.Runtime.Misc;
 using Nxl.Compiler.Velia.Generated;
+using Nxl.Compiler.Velia.Optimizer;
 using Re.Asm;
 
 namespace Nxl.Compiler.Velia.Nodes
@@ -20,9 +21,38 @@ namespace Nxl.Compiler.Velia.Nodes
             _generator = generator;
         }
 
+        private bool VisitFunctionDecl([NotNull] FunctionDeclSyntaxNode context)
+        {
+            using (_generator.Function(context.Name.Identifier))
+            {
+                int argCount = context.ParameterList.SlotCount;
+                RegisterOperand[] locals = new RegisterOperand[argCount];
+                RegisterOperand[] scratch = { Register.R10, Register.R11, Register.R12, Register.R13, Register.R14, Register.R15 };
+                for (int i = 0; i < argCount; i++)
+                {
+                    locals[i] = scratch[i];
+                }
+
+                _generator.LoadFunctionCallLocals(
+                    Abi.SystemV,
+                    argCount,
+                    locals
+                );
+
+                _generator.Nop();
+            }
+
+            return true;
+        }
+
         public bool VisitProgram([NotNull] DocumentRootSyntaxNode context)
         {
-            return false;
+            // write functions
+            foreach (var decl in context.Children.OfType<FunctionDeclSyntaxNode>())
+                if (!VisitFunctionDecl(decl))
+                    return false;
+
+            return true;
         }
     }
 }

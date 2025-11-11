@@ -101,7 +101,7 @@ namespace Nxl.Compiler.Velia
         private async Task<DocumentRootSyntaxNode?> ParseSingleFileAsync(string file)
         {
             await using var fileStream = File.OpenRead(file);
-            var input = CharStreams.fromStream(fileStream);
+            var input = CharStreams.fromStream(fileStream); // why must static members be camelCase?
             if (input == null) return null;
 
             // lexing phase
@@ -131,7 +131,7 @@ namespace Nxl.Compiler.Velia
             if (_saveTemp) await SaveTextAsync(rootContext.ToStringTree(parser), file);
 
             // convert parse tree to AST
-            var visitor = new VeliaAstGenerationVisitor(_diagnostics);
+            var visitor = new VeliaAstGenerationVisitor(file, _diagnostics);
             var enumerable = visitor.Visit(rootContext);
             return enumerable.FirstOrDefault() as DocumentRootSyntaxNode;
         }

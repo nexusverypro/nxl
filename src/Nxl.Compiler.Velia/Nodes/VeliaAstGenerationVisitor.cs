@@ -13,16 +13,18 @@ namespace Nxl.Compiler.Velia.Nodes
 {
     public class VeliaAstGenerationVisitor : VeliaBaseVisitor<IEnumerable<VeliaSyntaxNode>>
     {
+        private readonly string _filePath;
         private readonly IDiagnosticBag _diagnostics;
-        public VeliaAstGenerationVisitor(IDiagnosticBag diagnostics)
+        public VeliaAstGenerationVisitor(string filePath, IDiagnosticBag diagnostics)
         {
+            _filePath = filePath;
             _diagnostics = diagnostics;
         }
 
         public override IEnumerable<VeliaSyntaxNode> VisitProgram(VeliaParser.ProgramContext context)
         {
             var nodes = context.children.SelectMany(child => Visit(child) ?? Enumerable.Empty<VeliaSyntaxNode>());
-            return [new DocumentRootSyntaxNode(nodes.ToList())];
+            return [new DocumentRootSyntaxNode(_filePath, nodes.ToList())];
         }
 
         public override IEnumerable<VeliaSyntaxNode> VisitPackageDeclaration([NotNull] VeliaParser.PackageDeclarationContext context)

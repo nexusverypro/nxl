@@ -66,11 +66,7 @@ public abstract class VeliaSyntaxNode : GreenNode
 {
     protected readonly List<VeliaSyntaxNode> _children;
 
-    protected VeliaSyntaxNode()
-    {
-        _children = new List<VeliaSyntaxNode>();
-    }
-
+    protected VeliaSyntaxNode() => _children = new List<VeliaSyntaxNode>();
     protected VeliaSyntaxNode(IEnumerable<VeliaSyntaxNode> children)
     {
         _children = children.ToList();
@@ -88,7 +84,13 @@ public abstract class VeliaSyntaxNode : GreenNode
 
 public sealed class DocumentRootSyntaxNode : VeliaSyntaxNode
 {
-    public DocumentRootSyntaxNode(IEnumerable<VeliaSyntaxNode> children) : base(children) { }
+    private readonly string _filePath;
+    public DocumentRootSyntaxNode(string filePath, IEnumerable<VeliaSyntaxNode> children) : base(children)
+    {
+        _filePath = filePath;
+    }
+
+    public string FilePath => _filePath;
 
     public override SyntaxKind Kind => SyntaxKind.DocumentRoot;
     public IReadOnlyList<VeliaSyntaxNode> Children => _children;
@@ -103,6 +105,8 @@ public sealed class PackageDeclarationSyntaxNode : TopLevelDeclarationNodeBase
     {
         _packageName = packageName;
     }
+
+    public StringLiteralSyntaxNode PackageName => _packageName;
 
     public override SyntaxKind Kind => SyntaxKind.PackageDecl;
     public override int SlotCount => 1;
@@ -216,6 +220,8 @@ public sealed class UsePackageDeclSyntaxNode : VeliaSyntaxNode
         _packageNames = packageNames;
     }
 
+    public IEnumerable<StringLiteralSyntaxNode> PackageNames => _packageNames;
+
     public override SyntaxKind Kind => SyntaxKind.UsePackageDecl;
     public override int SlotCount => _packageNames.Count();
     public override GreenNode? GetSlot(int slot) => _packageNames.ElementAtOrDefault(slot);
@@ -231,6 +237,9 @@ public sealed class AttributeDeclSyntaxNode : VeliaSyntaxNode
         _name = name;
         _expression = expression;
     }
+
+    public IdentifierSyntaxNode Name => _name;
+    public ExpressionSyntaxNode? Expression => _expression;
 
     public override SyntaxKind Kind => SyntaxKind.AttributeDecl;
     public override int SlotCount => _expression == null ? 1 : 2;
@@ -294,7 +303,6 @@ public sealed class FunctionDeclSyntaxNode : VeliaSyntaxNode
 
     public override SyntaxKind Kind => SyntaxKind.FunctionDecl;
     public override int SlotCount => _attributes.Count() + _functionContracts.Count() + 3;
-
     public override GreenNode? GetSlot(int slot)
     {
         int attributeCount = _attributes.Count();
@@ -325,6 +333,7 @@ public sealed class IdentifierSyntaxNode : VeliaSyntaxNode
     }
 
     public string Identifier => _identifier;
+
     public override SyntaxKind Kind => SyntaxKind.Identifier;
 }
 
@@ -467,7 +476,6 @@ public sealed class BinaryExpressionSyntaxNode : ExpressionSyntaxNode
         _ when _operator >= BinaryOperator.Assign && _operator <= BinaryOperator.RightShiftAssign => SyntaxKind.AssignmentExpr,
         _ => throw new InvalidOperationException($"Unknown binary operator: {_operator}")
     };
-
     public override int SlotCount => 2;
     public override GreenNode? GetSlot(int slot) => slot switch
     {
@@ -518,6 +526,10 @@ public sealed class TernaryExpressionSyntaxNode : ExpressionSyntaxNode
         _falseExpr = falseExpr;
     }
 
+    public ExpressionSyntaxNode Condition => _condition;
+    public ExpressionSyntaxNode TrueExpr => _trueExpr;
+    public ExpressionSyntaxNode FalseExpr => _falseExpr;
+
     public override SyntaxKind Kind => SyntaxKind.TernaryExpr;
     public override int SlotCount => 3;
     public override GreenNode? GetSlot(int slot) => slot switch
@@ -540,6 +552,9 @@ public sealed class CompilerIntrinsicExpressionSyntaxNode : ExpressionSyntaxNode
         _arguments = arguments;
     }
 
+    public IdentifierSyntaxNode Name => _name;
+    public IEnumerable<ExpressionSyntaxNode>? Arguments => _arguments;
+
     public override SyntaxKind Kind => SyntaxKind.CompilerIntrinsicExpr;
     public override int SlotCount => 1 + (_arguments?.Count() ?? 0);
     public override GreenNode? GetSlot(int slot)
@@ -556,6 +571,8 @@ public sealed class ReturnStmtSyntaxNode : VeliaSyntaxNode
     {
         _expression = expression;
     }
+
+    public ExpressionSyntaxNode? Expression => _expression;
 
     public override SyntaxKind Kind => SyntaxKind.ReturnStmt;
     public override int SlotCount => _expression == null ? 0 : 1;
